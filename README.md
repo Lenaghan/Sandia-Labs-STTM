@@ -106,7 +106,7 @@ The `main.py` script orchestrates the entire process, which can be broken down i
 
 Create a `requirements.txt` file with the following contents:
 
-pandas
+```pandas
 numpy
 scikit-learn
 nltk
@@ -115,6 +115,45 @@ matplotlib
 seaborn
 wordcloud
 gensim
+```
+
+## Tuning the Model (Hyperparameters)
+
+The performance and quality of the clusters are highly dependent on the chosen hyperparameters. You can adjust them in the `run_clustering_pipeline` function within the **`main.py`** file.
+
+Here are the key parameters to tune:
+
+```python
+# In main.py, inside run_clustering_pipeline()
+
+clusterer = FrequencyBasedClustering(
+    topic_count=20,                 # <-- Number of initial, granular topics to discover.
+    support_threshold=0.0001,       # <-- Minimum % of docs a phrase must appear in.
+    significance_threshold=0.001,   # <-- Minimum score for a phrase to be used in modeling.
+    phrase_boost_factor=2.0,        # <-- Multiplier for domain-specific phrases.
+    n_iterations=150,               # <-- Number of iterations for the topic model.
+    min_phrase_len=3,               # <-- Minimum words in a phrase (n-gram).
+    max_phrase_len=5                # <-- Maximum words in a phrase (n-gram).
+)
+
+labels = clusterer.fit_predict(
+    preprocessed_docs=preprocessed_tokens,
+    domain_dictionary=domain_dict,
+    n_final_clusters=8              # <-- The final number of high-level clusters to create.
+)
+```
+
+-   **`topic_count`**: The number of initial, fine-grained topics the model will try to find. This should generally be larger than `n_final_clusters`. A good starting point is 2-4 times the expected number of final clusters.
+-   **`n_final_clusters`**: The number of final, interpretable meta-clusters you want. The model groups the initial `topic_count` topics into this many final clusters.
+-   **`support_threshold`**: Controls how common a phrase must be to be considered.
+    -   *Decrease* this value to include rarer phrases.
+    -   *Increase* it to be more strict and only use very common phrases.
+-   **`significance_threshold`**: Filters phrases based on their score (a combination of frequency and domain boost).
+    -   *Decrease* this to allow less significant phrases into the model, potentially creating more diverse but less distinct topics.
+    -   *Increase* it to be very selective, focusing only on the most important phrases.
+-   **`phrase_boost_factor`**: How much to prioritize phrases from your domain dictionary. A value of `2.0` means a matched phrase's score is doubled. Increase this if your domain terms are critical for defining topics.
+-   **`n_iterations`**: The number of training iterations for the topic model. More iterations can lead to better convergence but will take longer. 150-200 is often sufficient.
+-   **`min_phrase_len` / `max_phrase_len`**: Defines the size of the phrases (n-grams) to look for. The default of 3-to-5 words is a good starting point for many text types.
 
 ## Interpreting the Output
 
